@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "compactf3-fabric",
+	"version": "${version}",
+	"name": "CompactF3 Fabric",
+	"description": "Compact top-left HUD overlay with FPS, coordinates, time, speed, facing, and biome data.",
+	"authors": [
+		"username65735"
+	],
+	"license": "CC0-1.0",
+	"icon": "assets/compactf3-fabric/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"username65735.compactf3.CompactF3"
+		],
+		"client": [
+			"username65735.compactf3.CompactF3Client"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": ">=26.1.1 <=26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
