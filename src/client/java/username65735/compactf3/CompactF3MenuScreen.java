@@ -1,13 +1,13 @@
 package username65735.compactf3;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.text.Text;
 
 public class CompactF3MenuScreen extends Screen {
 	public CompactF3MenuScreen() {
-		super(Component.literal("CompactF3 Menu"));
+		super(Text.literal("CompactF3 Menu"));
 	}
 
 	@Override
@@ -18,35 +18,35 @@ public class CompactF3MenuScreen extends Screen {
 		int startX = (this.width - ((buttonWidth * 2) + spacing)) / 2;
 		int y = this.height / 2 - 10;
 
-		this.addRenderableWidget(Button.builder(Component.literal("Position Controller"), button ->
-			MinecraftCompatibility.setScreen(this.minecraft, new CompactF3PositionScreen(this))
-		).bounds(startX, y, buttonWidth, buttonHeight).build());
+		this.addDrawableChild(ButtonWidget.builder(Text.literal("Position Controller"), button ->
+			this.client.setScreen(new CompactF3PositionScreen(this))
+		).dimensions(startX, y, buttonWidth, buttonHeight).build());
 
-		this.addRenderableWidget(Button.builder(Component.literal("GUI Settings"), button ->
-			MinecraftCompatibility.setScreen(this.minecraft, new CompactF3GuiSettingsScreen(this))
-		).bounds(startX + buttonWidth + spacing, y, buttonWidth, buttonHeight).build());
+		this.addDrawableChild(ButtonWidget.builder(Text.literal("GUI Settings"), button ->
+			this.client.setScreen(new CompactF3GuiSettingsScreen(this))
+		).dimensions(startX + buttonWidth + spacing, y, buttonWidth, buttonHeight).build());
 
-		this.addRenderableWidget(Button.builder(Component.literal("Done"), button -> this.onClose())
-			.bounds((this.width / 2) - 50, y + 32, 100, buttonHeight)
+		this.addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> this.close())
+			.dimensions((this.width / 2) - 50, y + 32, 100, buttonHeight)
 			.build());
 	}
 
 	@Override
-	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		this.extractBackground(graphics, mouseX, mouseY, delta);
-		super.extractRenderState(graphics, mouseX, mouseY, delta);
-		graphics.centeredText(this.font, this.title, this.width / 2, this.height / 2 - 36, 0xFFFFFF);
+	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+		this.renderBackground(context, mouseX, mouseY, delta);
+		super.render(context, mouseX, mouseY, delta);
+		context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, this.height / 2 - 36, 0xFFFFFF);
 	}
 
 	@Override
-	public void onClose() {
-		if (this.minecraft != null) {
-			MinecraftCompatibility.setScreen(this.minecraft, null);
+	public void close() {
+		if (this.client != null) {
+			this.client.setScreen(null);
 		}
 	}
 
 	@Override
-	public boolean isPauseScreen() {
+	public boolean shouldPause() {
 		return false;
 	}
 }

@@ -1,15 +1,15 @@
 package username65735.compactf3;
 
-import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.resources.Identifier;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.biome.Biome;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Direction;
+import net.minecraft.world.biome.Biome;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,10 +82,10 @@ public final class CompactF3Hud {
 		requestRefresh();
 	}
 
-	public static void tick(Minecraft client) {
-		LocalPlayer player = client.player;
+	public static void tick(MinecraftClient client) {
+		ClientPlayerEntity player = client.player;
 
-		if (player == null || client.level == null) {
+		if (player == null || client.world == null) {
 			horizontalSpeedMetersPerSecond = 0.0D;
 			verticalSpeedMetersPerSecond = 0.0D;
 			totalSpeedMetersPerSecond = 0.0D;
@@ -112,10 +112,10 @@ public final class CompactF3Hud {
 		hasPreviousPosition = true;
 	}
 
-	public static void render(GuiGraphicsExtractor graphics, DeltaTracker tickCounter) {
-		Minecraft client = Minecraft.getInstance();
+	public static void render(DrawContext drawContext, RenderTickCounter tickCounter) {
+		MinecraftClient client = MinecraftClient.getInstance();
 
-		if (!enabled || MinecraftCompatibility.isHudHidden(client)) {
+		if (!enabled || !MinecraftClient.isHudEnabled()) {
 			return;
 		}
 
@@ -125,20 +125,20 @@ public final class CompactF3Hud {
 			return;
 		}
 
-		int lineHeight = client.font.lineHeight + LINE_SPACING;
+		int lineHeight = client.textRenderer.fontHeight + LINE_SPACING;
 		int maxWidth = maxLineWidth(client, cachedLines);
 		int boxWidth = maxWidth + PANEL_PADDING_LEFT + PANEL_PADDING_RIGHT;
 		int boxHeight = (cachedLines.size() * lineHeight) + PANEL_PADDING_TOP + PANEL_PADDING_BOTTOM;
-		int panelX = anchor.resolveX(graphics.guiWidth(), boxWidth, edgePadding);
-		int panelY = anchor.resolveY(graphics.guiHeight(), boxHeight, edgePadding);
-		drawPanel(graphics, cachedLines, panelX, panelY, lineHeight);
+		int panelX = anchor.resolveX(drawContext.getScaledWindowWidth(), boxWidth, edgePadding);
+		int panelY = anchor.resolveY(drawContext.getScaledWindowHeight(), boxHeight, edgePadding);
+		drawPanel(drawContext, cachedLines, panelX, panelY, lineHeight);
 	}
 
 	public static void requestRefresh() {
 		lastRefreshNanos = 0L;
 	}
 
-	private static void refreshIfNeeded(Minecraft client) {
+	private static void refreshIfNeeded(MinecraftClient client) {
 		long now = System.nanoTime();
 		long interval = Math.max(1L, 1_000_000_000L / Math.max(1, refreshRateHz));
 
@@ -155,37 +155,37 @@ public final class CompactF3Hud {
 		return alpha << 24;
 	}
 
-	private static void drawPanel(GuiGraphicsExtractor graphics, List<String> lines, int panelX, int panelY, int lineHeight) {
-		Minecraft client = Minecraft.getInstance();
+	private static void drawPanel(DrawContext drawContext, List<String> lines, int panelX, int panelY, int lineHeight) {
+		MinecraftClient client = MinecraftClient.getInstance();
 		int boxWidth = maxLineWidth(client, lines) + PANEL_PADDING_LEFT + PANEL_PADDING_RIGHT;
 		int boxHeight = (lines.size() * lineHeight) + PANEL_PADDING_TOP + PANEL_PADDING_BOTTOM;
-		graphics.fill(panelX, panelY, panelX + boxWidth, panelY + boxHeight, backgroundColor());
+		drawContext.fill(panelX, panelY, panelX + boxWidth, panelY + boxHeight, backgroundColor());
 
 		int textX = panelX + PANEL_PADDING_LEFT;
 		int textY = panelY + PANEL_PADDING_TOP;
 
 		for (String line : lines) {
-			graphics.text(client.font, line, textX, textY, 0xFFFFFFFF, false);
+			drawContext.drawText(client.textRenderer, line, textX, textY, 0xFFFFFFFF, false);
 			textY += lineHeight;
 		}
 	}
 
-	private static int maxLineWidth(Minecraft client, List<String> lines) {
+	private static int maxLineWidth(MinecraftClient client, List<String> lines) {
 		int maxWidth = 0;
 
 		for (String line : lines) {
-			maxWidth = Math.max(maxWidth, client.font.width(line));
+			maxWidth = Math.max(maxWidth, client.textRenderer.getWidth(line));
 		}
 
 		return maxWidth;
 	}
 
-	private static List<String> buildLines(Minecraft client) {
+	private static List<String> buildLines(MinecraftClient client) {
 		List<String> lines = new ArrayList<>();
-		lines.add(String.format(Locale.ROOT, "FPS: %d (%.1f ms)", client.getFps(), frameTimeMillis(client)));
+		lines.add(String.format(Locale.ROOT, "FPS: %d (%.1f ms)", client.getCurrentFps(), frameTimeMillis(client)));
 
-		LocalPlayer player = client.player;
-		ClientLevel world = client.level;
+		ClientPlayerEntity player = client.player;
+		ClientWorld world = client.world;
 
 		if (player == null || world == null) {
 			lines.add(NOT_IN_WORLD_TEXT);
@@ -197,14 +197,14 @@ public final class CompactF3Hud {
 		lines.add(speedLine("Horizontal", horizontalSpeedMetersPerSecond));
 		lines.add(speedLine("Vertical", verticalSpeedMetersPerSecond));
 		lines.add(speedLine("Total Speed", totalSpeedMetersPerSecond));
-		lines.add(String.format(Locale.ROOT, "Facing: %s (%.1f\u00B0)", formatDirection(player.getDirection()), normalizeYaw(player.getYRot())));
-		lines.add("Time: " + formatTimeOfDay(world.getOverworldClockTime()));
+		lines.add(String.format(Locale.ROOT, "Facing: %s (%.1f\u00B0)", formatDirection(player.getHorizontalFacing()), normalizeYaw(player.getYaw())));
+		lines.add("Time: " + formatTimeOfDay(world.getTimeOfDay()));
 		lines.add("Biome: " + formatBiome(world, player));
 		return lines;
 	}
 
-	private static double frameTimeMillis(Minecraft client) {
-		int fps = client.getFps();
+	private static double frameTimeMillis(MinecraftClient client) {
+		int fps = client.getCurrentFps();
 		return fps > 0 ? 1000.0D / fps : 0.0D;
 	}
 
@@ -242,12 +242,12 @@ public final class CompactF3Hud {
 		return Character.toUpperCase(name.charAt(0)) + name.substring(1);
 	}
 
-	private static String formatBiome(ClientLevel world, LocalPlayer player) {
-		Holder<Biome> biomeEntry = world.getBiome(player.blockPosition());
-		return biomeEntry.unwrapKey()
-			.map(ResourceKey::identifier)
+	private static String formatBiome(ClientWorld world, ClientPlayerEntity player) {
+		RegistryEntry<Biome> biomeEntry = world.getBiome(player.getBlockPos());
+		return biomeEntry.getKey()
+			.map(RegistryKey::getValue)
 			.map(Identifier::toString)
-			.orElseGet(biomeEntry::getRegisteredName);
+			.orElseGet(biomeEntry::getIdAsString);
 	}
 
 	public enum Anchor {

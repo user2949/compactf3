@@ -1,16 +1,16 @@
 package username65735.compactf3;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.AbstractSliderButton;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.SliderWidget;
+import net.minecraft.text.Text;
 
 public class CompactF3GuiSettingsScreen extends Screen {
 	private final Screen parent;
 
 	public CompactF3GuiSettingsScreen(Screen parent) {
-		super(Component.literal("CompactF3 GUI Settings"));
+		super(Text.literal("CompactF3 GUI Settings"));
 		this.parent = parent;
 	}
 
@@ -21,7 +21,7 @@ public class CompactF3GuiSettingsScreen extends Screen {
 		int x = (this.width - sliderWidth) / 2;
 		int startY = this.height / 2 - 36;
 
-		this.addRenderableWidget(new CompactF3SliderWidget(
+		this.addDrawableChild(new CompactF3SliderWidget(
 			x,
 			startY,
 			sliderWidth,
@@ -42,7 +42,7 @@ public class CompactF3GuiSettingsScreen extends Screen {
 			}
 		});
 
-		this.addRenderableWidget(new CompactF3SliderWidget(
+		this.addDrawableChild(new CompactF3SliderWidget(
 			x,
 			startY + 24,
 			sliderWidth,
@@ -63,7 +63,7 @@ public class CompactF3GuiSettingsScreen extends Screen {
 			}
 		});
 
-		this.addRenderableWidget(new CompactF3SliderWidget(
+		this.addDrawableChild(new CompactF3SliderWidget(
 			x,
 			startY + 48,
 			sliderWidth,
@@ -84,37 +84,37 @@ public class CompactF3GuiSettingsScreen extends Screen {
 			}
 		});
 
-		this.addRenderableWidget(Button.builder(Component.literal("Back"), button -> this.onClose())
-			.bounds((this.width / 2) - 50, startY + 78, 100, 20)
+		this.addDrawableChild(ButtonWidget.builder(Text.literal("Back"), button -> this.close())
+			.dimensions((this.width / 2) - 50, startY + 78, 100, 20)
 			.build());
 	}
 
 	@Override
-	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		this.extractBackground(graphics, mouseX, mouseY, delta);
-		super.extractRenderState(graphics, mouseX, mouseY, delta);
-		graphics.centeredText(this.font, this.title, this.width / 2, this.height / 2 - 58, 0xFFFFFF);
+	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+		this.renderBackground(context, mouseX, mouseY, delta);
+		super.render(context, mouseX, mouseY, delta);
+		context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, this.height / 2 - 58, 0xFFFFFF);
 	}
 
 	@Override
-	public void onClose() {
-		if (this.minecraft != null) {
-			MinecraftCompatibility.setScreen(this.minecraft, this.parent);
+	public void close() {
+		if (this.client != null) {
+			this.client.setScreen(this.parent);
 		}
 	}
 
 	@Override
-	public boolean isPauseScreen() {
+	public boolean shouldPause() {
 		return false;
 	}
 
-	private abstract static class CompactF3SliderWidget extends AbstractSliderButton {
+	private abstract static class CompactF3SliderWidget extends SliderWidget {
 		private final String label;
 		private final int min;
 		private final int max;
 
 		protected CompactF3SliderWidget(int x, int y, int width, int height, String label, int currentValue, int min, int max) {
-			super(x, y, width, height, Component.literal(""), normalize(currentValue, min, max));
+			super(x, y, width, height, Text.literal(""), normalize(currentValue, min, max));
 			this.label = label;
 			this.min = min;
 			this.max = max;
@@ -124,7 +124,7 @@ public class CompactF3GuiSettingsScreen extends Screen {
 		@Override
 		protected void updateMessage() {
 			int settingValue = this.settingValue();
-			this.setMessage(Component.literal(this.label + ": " + valueText(settingValue)));
+			this.setMessage(Text.literal(this.label + ": " + valueText(settingValue)));
 		}
 
 		@Override
